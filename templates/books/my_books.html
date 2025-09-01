@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="mb-8">
+    <h1 class="text-4xl font-bold text-gray-800 mb-2">My Borrowed Books</h1>
+    <p class="text-gray-600">Manage your currently borrowed books</p>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    {% for record in borrowed_books %}
+    <div class="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">
+        <div class="h-32 bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center">
+            <span class="text-4xl text-white opacity-80">📚</span>
+        </div>
+        <div class="p-6">
+            <h3 class="text-xl font-bold text-gray-800 mb-2">{{ record.book.title }}</h3>
+            <p class="text-gray-600 mb-2">
+                <span class="font-medium">Author:</span> {{ record.book.author.name }}
+            </p>
+            <p class="text-gray-600 mb-4">
+                <span class="font-medium">Borrowed:</span> {{ record.borrow_date|date:"M d, Y" }}
+            </p>
+            <a href="{% url 'return_book' record.pk %}" 
+               class="w-full bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition text-center block">
+                Return Book
+            </a>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-span-full text-center py-12">
+        <div class="text-6xl mb-4">📚</div>
+        <h3 class="text-xl font-semibold text-gray-600 mb-2">No borrowed books</h3>
+        <p class="text-gray-500 mb-4">You haven't borrowed any books yet.</p>
+        <a href="{% url 'book_list' %}" 
+           class="bg-primary text-white px-6 py-3 rounded-lg hover:bg-secondary transition">
+            Browse Books
+        </a>
+    </div>
+    {% endfor %}
+</div>
+
+{% if borrowed_books %}
+<div class="mt-8">
+    <a href="{% url 'book_list' %}" 
+       class="inline-flex items-center text-primary hover:text-secondary transition">
+        ← Browse More Books
+    </a>
+</div>
+{% endif %}
+{% endblock %}

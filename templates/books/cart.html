@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% csrf_token %}
+{% csrf_token %}
+<div class="mb-8">
+    <h1 class="text-4xl font-bold text-gray-800 mb-2">My Cart</h1>
+    <p class="text-gray-600">Books you want to borrow</p>
+</div>
+
+<div class="bg-white rounded-xl shadow-lg p-6">
+    <div id="cart-items" class="space-y-4">
+        <!-- Cart items will be loaded here by JavaScript -->
+    </div>
+    
+    <div id="empty-cart" class="text-center py-12 hidden">
+        <div class="text-6xl mb-4">🛒</div>
+        <h3 class="text-xl font-semibold text-gray-600 mb-2">Your cart is empty</h3>
+        <p class="text-gray-500 mb-4">Add some books to get started</p>
+        <a href="{% url 'book_list' %}" 
+           class="bg-primary text-white px-6 py-3 rounded-lg hover:bg-secondary transition">
+            Browse Books
+        </a>
+    </div>
+    
+    <div id="cart-actions" class="mt-6 pt-6 border-t border-gray-200 hidden">
+        <div class="flex justify-between items-center">
+            <button onclick="clearCart()" 
+                    class="text-red-600 hover:text-red-800 transition">
+                Clear Cart
+            </button>
+            <button onclick="borrowAllFromCart()" 
+                    class="bg-primary text-white px-6 py-3 rounded-lg hover:bg-secondary transition">
+                Borrow All Books
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+function loadCart() {
+    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    const cartItems = document.getElementById('cart-items');
+    const emptyCart = document.getElementById('empty-cart');
+    const cartActions = document.getElementById('cart-actions');
+    
+    if (cart.length === 0) {
+        cartItems.innerHTML = '';
+        emptyCart.classList.remove('hidden');
+        cartActions.classList.add('hidden');
+        return;
+    }
+    
+    emptyCart.classList.add('hidden');
+    cartActions.classList.remove('hidden');
+    
+    cartItems.innerHTML = cart.map(item => `
+        <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+            <div class="flex items-center space-x-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-blue-400 to-purple-500 rounded-lg flex items-center justify-center">
+                    <span class="text-white text-xl">📚</span>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-800">${item.title}</h3>
+                    <p class="text-gray-600 text-sm">Ready to borrow</p>
+                </div>
+            </div>
+            <div class="flex space-x-2">
+                <button onclick="borrowSingleBook(${item.id}, '${item.title}')" 
+                        class="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 transition text-sm">
+                    Borrow
+                </button>
+                <button onclick="removeFromCart(${item.id})" 
+                        class="text-red-600 hover:text-red-800 transition">
+                    Remove
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function removeFromCart(bookId) {
+    let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    cart = cart.filter(item => item.id !== bookId);
+    localStorage.setItem('cart', JSON.stringify(cart));
+    loadCart();
+    updateCartCount();
+}
+
+function clearCart() {
+    if (confirm('Are you sure you want to clear your cart?')) {
+        localStorage.removeItem('cart');
+        loadCart();
+        updateCartCount();
+    }
+}
+
+function borrowAllFromCart() {
+    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    if (cart.length === 0) return;
+    
+    // Process each book sequentially
+    cart.forEach(item => {
+        window.open(`/borrow/${item.id}/`, '_blank');
+    });
+    
+    localStorage.removeItem('cart');
+    loadCart();
+    updateCartCount();
+    alert('Opening borrow pages for all books in cart!');
+}
+
+document.addEventListener('DOMContentLoaded', loadCart);
+
+// Add individual borrow function
+function borrowSingleBook(bookId, title) {
+    fetch(`/borrow/${bookId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json'
+        }
+    }).then(response => {
+        if (response.ok) {
+            removeFromCart(bookId);
+            alert(`Successfully borrowed "${title}"!`);
+        } else {
+            alert(`Failed to borrow "${title}". It may not be available.`);
+        }
+    }).catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while borrowing the book.');
+    });
+}
+</script>
+{% endblock %}
